@@ -8,11 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Bogus" Version="33.1.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
 
-  <!-- <ItemGroup>
-    <Using Include="System.Text.Json" /> 
-  </ItemGroup> -->
+   <!--<ItemGroup>
+     <Using Include="System.Text.Json" />
+     <Using Include="Microsoft.AspNetCore.Mvc" />
+     <Using Include="SampleMinimalWebApi.RandomHelper" Static="true" />
+   </ItemGroup> -->
 
 </Project>

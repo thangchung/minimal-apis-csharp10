@@ -1,0 +1,21 @@
+@host = https://localhost:7042
+
+###
+GET {{host}}/products/1 HTTP/1.1
+Content-Type: application/json
+
+###
+POST {{host}}/products HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "updated product 01"
+}
+
+###
+PUT {{host}}/products/1 HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "updated product 01"
+}

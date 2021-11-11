@@ -1,4 +1,7 @@
-using System.Text.Json; 
+using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
+using SampleMinimalWebApi;
+
 // after enabled global usings, then we can remove above line
 // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-10.0/globalusingdirective
 
@@ -15,7 +18,7 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>(); // DI for M
 var app = builder.Build();
 
 // we don't have to handle what is development so that we will handle exception, Minimal APIs will do it in core
-if (app.Environment.IsDevelopment()) 
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -46,18 +49,32 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 // Allow attach attributes to Lambda Expression like [FromBody], [FromQuery], [FromHeader]...
-app.MapGet("/products/{id:int}", async (int id, [Microsoft.AspNetCore.Mvc.FromServices] IProductRepository productRepository) => 
-{
-    return await productRepository.GetProduct(id) switch // improve patterns matching in C# 10
+// and with Minimal APIs, we don't need to have [FromServices] for DI as well
+app.MapGet("/products/{id:int}",
+    async (int id, [FromServices] IProductRepository productRepository) =>
     {
-        { } product => Results.Ok(product), // { } is null check in C# 10
-        null => Results.NotFound()
-    };
-});
+        return await productRepository.GetProduct(id) switch // improve patterns matching in C# 10
+        {
+            { } product => Results.Ok(product), // { } is null check in C# 10
+            null => Results.NotFound()
+        };
+    });
 
-app.MapPost("/products", (Product product) => {
-    Console.WriteLine(JsonSerializer.Serialize(product));
-});
+app.MapPost("/products",
+    (AddProductModel product) =>
+    {
+        // if you using Global Usings Static then you can call RandomName() without RandomHelper
+        var createdProduct = product with {Id = RandomHelper.RandomNumber(), Name = RandomHelper.RandomName()};
+        Console.WriteLine(JsonSerializer.Serialize(createdProduct));
+        return Results.Ok(createdProduct);
+    });
+
+// with Record Struct in C# 10 we can using With for minimize the assignment needs to assign id into the model neatly
+app.MapPut("/products/{id:int}",
+    (int id, [FromBody] UpdateProductModel model) => Results.Ok(model with {Id = id}));
+
+// we can map fallback to swagger like this
+app.MapFallback(() => Results.Redirect("/swagger"));
 
 app.Run();
 
@@ -66,10 +83,10 @@ record WeatherForecast(DateTime Date, int TemperatureC, string? Summary)
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
 
-interface IProductRepository 
+interface IProductRepository
 {
-    Task<IEnumerable<Product>> GetProducts(); 
-    Task<Product?> GetProduct(int id); 
+    Task<IEnumerable<Product>> GetProducts();
+    Task<Product?> GetProduct(int id);
 }
 
 internal class ProductRepository : IProductRepository
@@ -77,7 +94,7 @@ internal class ProductRepository : IProductRepository
     public Task<Product?> GetProduct(int id)
     {
         Product? product = null;
-        
+
         if(id == 1 && product is not { }) // Null check in C# 10
         {
             product = new Product(1, "Sample 01");
@@ -96,3 +113,6 @@ internal class ProductRepository : IProductRepository
 record struct Product(int Id, string Name, Category? Category = null);
 
 record Category(int Id, string Name);
+
+record struct AddProductModel(int Id, string Name, Category? Category = null);
+record struct UpdateProductModel(int Id, string Name, Category? Category = null);
